@@ -43,7 +43,7 @@ using NINA.Sequencer.SequenceItem.FlatDevice;
 
 namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTestCategory {
 
-    [ExportMetadata("Name", "TrainedDarkFlatExposure without flat cover")]
+    [ExportMetadata("Name", "Trained Dark Flat Exposure without flat cover")]
     [ExportMetadata("Description", "You can use this item only when you need to run trained dark flat exposure without opening/closing flat panel")]
     [ExportMetadata("Icon", "BrainBulbSVG")]
     [ExportMetadata("Category", "Lbl_SequenceCategory_FlatDevice")]
