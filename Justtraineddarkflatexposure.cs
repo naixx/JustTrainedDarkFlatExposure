@@ -33,7 +33,7 @@ namespace Naixx.NINA.Justtraineddarkflatexposure {
         private readonly IImageSaveMediator imageSaveMediator;
 
         // Implementing a file pattern
-        private readonly ImagePattern exampleImagePattern = new ImagePattern("$$EXAMPLEPATTERN$$", "An example of an image pattern implementation", "JustTrainedDarkFlatExposure");
+       // private readonly ImagePattern exampleImagePattern = new ImagePattern("$$EXAMPLEPATTERN$$", "An example of an image pattern implementation", "JustTrainedDarkFlatExposure");
 
         [ImportingConstructor]
         public Justtraineddarkflatexposure(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
@@ -54,17 +54,17 @@ namespace Naixx.NINA.Justtraineddarkflatexposure {
 
             // Run these handlers when an image is being saved
             this.imageSaveMediator.BeforeImageSaved += ImageSaveMediator_BeforeImageSaved;
-            this.imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
+           // this.imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
 
             // Register a new image file pattern for the Options > Imaging > File Patterns area
-            options.AddImagePattern(exampleImagePattern);
+          //  options.AddImagePattern(exampleImagePattern);
         }
 
         public override Task Teardown() {
             // Make sure to unregister an event when the object is no longer in use. Otherwise garbage collection will be prevented.
             profileService.ProfileChanged -= ProfileService_ProfileChanged;
             imageSaveMediator.BeforeImageSaved -= ImageSaveMediator_BeforeImageSaved;
-            imageSaveMediator.BeforeFinalizeImageSaved -= ImageSaveMediator_BeforeFinalizeImageSaved;
+           // imageSaveMediator.BeforeFinalizeImageSaved -= ImageSaveMediator_BeforeFinalizeImageSaved;
 
             return base.Teardown();
         }
@@ -80,21 +80,7 @@ namespace Naixx.NINA.Justtraineddarkflatexposure {
 
             string exampleKeywordComment = "This is a {0} keyword";
 
-            // string
-            string exampleStringKeywordName = "STRKEYWD";
-            string exampleStringKeywordValue = "Example";
-            e.Image.MetaData.GenericHeaders.Add(new StringMetaDataHeader(exampleStringKeywordName, exampleStringKeywordValue, string.Format(exampleKeywordComment, "string")));
-
-            // integer
-            string exampleIntKeywordName = "INTKEYWD";
-            int exampleIntKeywordValue = 5;
-            e.Image.MetaData.GenericHeaders.Add(new IntMetaDataHeader(exampleIntKeywordName, exampleIntKeywordValue, string.Format(exampleKeywordComment, "integer")));
-
-            // double
-            string exampleDoubleKeywordName = "DBLKEYWD";
-            double exampleDoubleKeywordValue = 1.3d;
-            e.Image.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader(exampleDoubleKeywordName, exampleDoubleKeywordValue, string.Format(exampleKeywordComment, "double")));
-
+           
             // Classes also exist for other data types:
             // BoolMetaDataHeader()
             // DateTimeMetaDataHeader()
@@ -102,14 +88,14 @@ namespace Naixx.NINA.Justtraineddarkflatexposure {
             return Task.CompletedTask;
         }
 
-        private Task ImageSaveMediator_BeforeFinalizeImageSaved(object sender, BeforeFinalizeImageSavedEventArgs e) {
-            // Populate the example image pattern with data. This can provide data that may not be immediately available
-            e.AddImagePattern(new ImagePattern(exampleImagePattern.Key, exampleImagePattern.Description, exampleImagePattern.Category) {
-                Value = $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.ffffffK}"
-            });
+        //private Task ImageSaveMediator_BeforeFinalizeImageSaved(object sender, BeforeFinalizeImageSavedEventArgs e) {
+        //    // Populate the example image pattern with data. This can provide data that may not be immediately available
+        //    e.AddImagePattern(new ImagePattern(exampleImagePattern.Key, exampleImagePattern.Description, exampleImagePattern.Category) {
+        //        Value = $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.ffffffK}"
+        //    });
 
-            return Task.CompletedTask;
-        }
+        //    return Task.CompletedTask;
+        //}
 
         public string DefaultNotificationMessage {
             get {

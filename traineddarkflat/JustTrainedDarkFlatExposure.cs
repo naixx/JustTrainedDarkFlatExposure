@@ -40,6 +40,7 @@ using NINA.Sequencer.Utility;
 using NINA.Core.Utility;
 using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.SequenceItem.FlatDevice;
+using NINA.Core.Model.Equipment;
 
 namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTestCategory {
 
@@ -69,7 +70,7 @@ namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTest
                 new ToggleLight(flatDeviceMediator) { OnOff = false },
                 new SwitchFilter(profileService, filterWheelMediator),
                 new SetBrightness(flatDeviceMediator),
-                new TakeExposure(profileService, cameraMediator, imagingMediator, imageSaveMediator, imageHistoryVM) { ImageType = CaptureSequence.ImageTypes.DARKFLAT },
+                new TakeExposure(profileService, cameraMediator, imagingMediator, imageSaveMediator, imageHistoryVM) { ImageType = CaptureSequence.ImageTypes.DARK },
                 new LoopCondition() { Iterations = 1 }
 
             ) {
@@ -85,6 +86,7 @@ namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTest
             TakeExposure takeExposure,
             LoopCondition loopCondition
             ) {
+            TrainedDarkFlatExposure f;
             this.profileService = profileService;
 
             this.Add(toggleLightOff);
@@ -171,27 +173,24 @@ namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTest
         }
 
         public override Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            var loop = GetIterations();
-            if (loop.CompletedIterations >= loop.Iterations) {
-                Logger.Warning($"The Trained Dark Flat Exposure progress is already complete ({loop.CompletedIterations}/{loop.Iterations}). The instruction will be skipped");
-                throw new SequenceItemSkippedException($"The Trained Dark Flat Exposure progress is already complete ({loop.CompletedIterations}/{loop.Iterations}). The instruction will be skipped");
+            LoopCondition iterations = GetIterations();
+            if (iterations.CompletedIterations >= iterations.Iterations) {
+                Logger.Warning($"The Trained Dark Exposure progress is already complete ({iterations.CompletedIterations}/{iterations.Iterations}). The instruction will be skipped", "Execute", "C:\\Projects\\nina\\NINA.Sequencer\\SequenceItem\\FlatDevice\\TrainedDarkFlatExposure.cs", 202);
+                throw new SequenceItemSkippedException($"The Trained Dark Exposure progress is already complete ({iterations.CompletedIterations}/{iterations.Iterations}). The instruction will be skipped");
             }
 
-            /* Lookup trained values and set brightness and exposure time accordingly */
-            var filter = GetSwitchFilterItem()?.Filter;
-            var takeExposure = GetExposureItem();
-            var binning = takeExposure.Binning;
-            var gain = takeExposure.Gain == -1 ? profileService.ActiveProfile.CameraSettings.Gain ?? -1 : takeExposure.Gain;
-            var info = profileService.ActiveProfile.FlatDeviceSettings.GetBrightnessInfo(new FlatDeviceFilterSettingsKey(filter?.Position, binning, gain));
-
+            FilterInfo filterInfo = GetSwitchFilterItem()?.Filter;
+            TakeExposure exposureItem = GetExposureItem();
+            BinningMode binning = exposureItem.Binning;
+            int gain = ((exposureItem.Gain != -1) ? exposureItem.Gain : (profileService.ActiveProfile.CameraSettings.Gain ?? (-1)));
+            int offset = ((exposureItem.Offset != -1) ? exposureItem.Offset : (profileService.ActiveProfile.CameraSettings.Offset ?? (-1)));
+            TrainedFlatExposureSetting trainedFlatExposureSetting = profileService.ActiveProfile.FlatDeviceSettings.GetTrainedFlatExposureSetting(filterInfo?.Position, binning, gain, offset);
             GetSetBrightnessItem().Brightness = 0;
-            takeExposure.ExposureTime = info.Time;
+            exposureItem.ExposureTime = trainedFlatExposureSetting.Time;
 
-        
-
-            var toggleLightOff = GetToggleLightOffItem();
-            if (!toggleLightOff.Validate()) {
-                toggleLightOff.Skip();
+            ToggleLight toggleLightOffItem = GetToggleLightOffItem();
+            if (!toggleLightOffItem.Validate()) {
+                toggleLightOffItem.Skip();
                 GetSetBrightnessItem().Skip();
             }
 
@@ -199,28 +198,27 @@ namespace Naixx.NINA.Justtraineddarkflatexposure.JusttraineddarkflatexposureTest
         }
 
         public override bool Validate() {
-            var switchFilter = GetSwitchFilterItem();
-            var takeExposure = GetExposureItem();
-            var setBrightness = GetSetBrightnessItem();
-
-            var valid = takeExposure.Validate() && switchFilter.Validate() && setBrightness.Validate();
-
-            var issues = new List<string>();
-
-            if (valid) {
-                var filter = switchFilter?.Filter;
-                var binning = takeExposure.Binning;
-                var gain = takeExposure.Gain == -1 ? profileService.ActiveProfile.CameraSettings.Gain ?? -1 : takeExposure.Gain;
-                if (profileService.ActiveProfile.FlatDeviceSettings.GetBrightnessInfo(new FlatDeviceFilterSettingsKey(filter?.Position, binning, gain)) == null) {
-                    issues.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Validation_FlatDeviceTrainedExposureNotFound"], filter?.Name, gain, binning?.Name));
-                    valid = false;
+            SwitchFilter switchFilterItem = GetSwitchFilterItem();
+            TakeExposure exposureItem = GetExposureItem();
+            SetBrightness setBrightnessItem = GetSetBrightnessItem();
+            bool flag = exposureItem.Validate() && switchFilterItem.Validate() && setBrightnessItem.Validate();
+            List<string> list = new List<string>();
+            if (flag) {
+                FilterInfo filterInfo = switchFilterItem?.Filter;
+                BinningMode binning = exposureItem.Binning;
+                int num = ((exposureItem.Gain != -1) ? exposureItem.Gain : (profileService.ActiveProfile.CameraSettings.Gain ?? (-1)));
+                int offset = ((exposureItem.Offset != -1) ? exposureItem.Offset : (profileService.ActiveProfile.CameraSettings.Offset ?? (-1)));
+                if (profileService.ActiveProfile.FlatDeviceSettings.GetTrainedFlatExposureSetting(filterInfo?.Position, binning, num, offset) == null) {
+                    list.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Validation_FlatDeviceTrainedExposureNotFound"], filterInfo?.Name, num, binning?.Name));
+                    flag = false;
                 }
             }
 
-            Issues = issues.Concat(takeExposure.Issues).Concat(switchFilter.Issues).Concat(setBrightness.Issues).Distinct().ToList();
-            RaisePropertyChanged(nameof(Issues));
-
-            return valid;
+            base.Issues = list.Concat(exposureItem.Issues).Concat(switchFilterItem.Issues).Concat(setBrightnessItem.Issues)
+                .Distinct()
+                .ToList();
+            RaisePropertyChanged("Issues");
+            return flag;
         }
 
         /// <summary>
